@@ -106,3 +106,9 @@ This call will trigger, in this order:
 1. `current_state.on_exit(event&)` if available, `.on_exit()` otherwise;
 2. `t.on_transit()` if available;
 3. `next_state.on_enter(event&)` if available, `.on_enter()` otherwise;
+
+If the event is default initializable, it is possible to: 
+
+```cpp
+state_machine.handle_event<event>(); 
+```
