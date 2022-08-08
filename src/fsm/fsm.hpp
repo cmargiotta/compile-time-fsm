@@ -6,6 +6,7 @@
 #ifndef FSM_HPP
 #define FSM_HPP
 
+#include <concepts>
 #include <exception>
 #include <stdexcept>
 #include <tuple>
@@ -222,6 +223,17 @@ namespace ctfsm
                         this->handle_event_<current_state, target_state>(event);
                     },
                     _current_state);
+            }
+
+            constexpr void handle_event(auto&& e) noexcept
+            {
+                handle_event(e);
+            }
+
+            template<std::default_initializable event>
+            constexpr void handle_event() noexcept
+            {
+                handle_event(event {});
             }
 
             /**
