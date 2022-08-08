@@ -1,5 +1,8 @@
+#define CATCH_CONFIG_ENABLE_BENCHMARKING
+
 #include <catch2/catch.hpp>
 
+#include <cstddef>
 #include <string_view>
 
 #include <fsm/fsm.hpp>
@@ -66,6 +69,7 @@ TEST_CASE("FSM basic usage", "[fsm]")
 {
     ctfsm::fsm<state_on> fsm;
     switch_on            on;
+    switch_off           off;
 
     REQUIRE(fsm.get_current_state_id() == "ON");
     REQUIRE(!state_on::on_entered);
@@ -90,4 +94,13 @@ TEST_CASE("FSM basic usage", "[fsm]")
 
     fsm(on);
     REQUIRE(fsm.get_current_state_id() == "ON");
+
+    BENCHMARK("Changing state 1000 times")
+    {
+        for (std::size_t i = 0; i < 500; ++i)
+        {
+            fsm(off);
+            fsm(on);
+        }
+    };
 }
