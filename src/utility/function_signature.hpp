@@ -1,3 +1,10 @@
+/**
+ * @file function_signature.hpp
+ * @author Carmine Margiotta (car.margiotta@icloud.com)
+ *
+ * @copyright Copyright (c) 2022
+ */
+
 #ifndef TYPE_TRAITS_FUNCTION_SIGNATURE_HPP
 #define TYPE_TRAITS_FUNCTION_SIGNATURE_HPP
 

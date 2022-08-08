@@ -1,3 +1,10 @@
+/**
+ * @file type_set.hpp
+ * @author Carmine Margiotta (car.margiotta@icloud.com)
+ *
+ * @copyright Copyright (c) 2022
+ */
+
 #ifndef UTILITY_TYPE_SET_HPP
 #define UTILITY_TYPE_SET_HPP
 

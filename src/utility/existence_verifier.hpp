@@ -1,3 +1,10 @@
+/**
+ * @file existence_verifier.hpp
+ * @author Carmine Margiotta (car.margiotta@icloud.com)
+ *
+ * @copyright Copyright (c) 2022
+ */
+
 #ifndef UTILITY_EXISTENCE_VERIFIER_HPP
 #define UTILITY_EXISTENCE_VERIFIER_HPP
 

@@ -1,3 +1,10 @@
+/**
+ * @file type_map.hpp
+ * @author Carmine Margiotta (car.margiotta@icloud.com)
+ *
+ * @copyright Copyright (c) 2022
+ */
+
 #ifndef TYPE_TRAITS_TYPE_MAP_HPP
 #define TYPE_TRAITS_TYPE_MAP_HPP
 

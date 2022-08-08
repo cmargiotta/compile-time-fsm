@@ -1,6 +1,8 @@
 /**
  * @file fsm.hpp
  * @author Carmine Margiotta (car.margiotta@icloud.com)
+ *
+ * @copyright Copyright (c) 2022
  */
 
 #ifndef FSM_HPP
