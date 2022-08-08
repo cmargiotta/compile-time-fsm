@@ -101,6 +101,12 @@ to trigger a state change in the fsm:
 state_machine.handle_event(t); 
 ```
 
+or 
+
+```cpp
+state_machine(t); 
+```
+
 This call will trigger, in this order:
 
 1. `current_state.on_exit(event&)` if available, `.on_exit()` otherwise;
