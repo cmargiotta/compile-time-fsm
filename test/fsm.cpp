@@ -6,7 +6,7 @@
 
 struct switch_on
 {
-        static constinit inline bool transited = false;
+        bool transited = false;
 
         void on_transit()
         {
@@ -74,6 +74,7 @@ TEST_CASE("FSM basic usage", "[fsm]")
 
     REQUIRE(fsm.get_current_state_id() == "ON");
     REQUIRE(state_on::on_entered);
+    REQUIRE(on.transited);
 
     fsm.handle_event(switch_off());
 
@@ -82,5 +83,11 @@ TEST_CASE("FSM basic usage", "[fsm]")
 
     fsm.handle_event<switch_on>();
 
+    REQUIRE(fsm.get_current_state_id() == "ON");
+
+    fsm(switch_off());
+    REQUIRE(fsm.get_current_state_id() == "OFF");
+
+    fsm(on);
     REQUIRE(fsm.get_current_state_id() == "ON");
 }

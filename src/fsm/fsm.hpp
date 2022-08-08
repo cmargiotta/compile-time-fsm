@@ -207,7 +207,7 @@ namespace ctfsm
              * @param event
              */
             template<typename event_>
-            constexpr void handle_event(event_& event) noexcept
+            constexpr void handle_event(event_&& event) noexcept
             {
                 std::visit(
                     [this, &event](auto&& current)
@@ -215,7 +215,8 @@ namespace ctfsm
                         using current_state
                             = std::remove_pointer_t<std::remove_reference_t<decltype(current)>>;
                         using target_state =
-                            typename find_by_key<event_, typename current_state::transitions>::result;
+                            typename find_by_key<std::remove_reference_t<event_>,
+                                                 typename current_state::transitions>::result;
 
                         static_assert(current_state::transitions::valid,
                                       "transitions events must be unique");
@@ -225,15 +226,25 @@ namespace ctfsm
                     _current_state);
             }
 
-            constexpr void handle_event(auto&& e) noexcept
-            {
-                handle_event(e);
-            }
-
+            /**
+             * @brief Construct an empty event and handle it
+             *
+             * @tparam event
+             */
             template<std::default_initializable event>
             constexpr void handle_event() noexcept
             {
                 handle_event(event {});
+            }
+
+            /**
+             * @brief FSM can also be directly invoked with an event
+             *
+             * @param event
+             */
+            constexpr void operator()(auto&& event) noexcept
+            {
+                handle_event(event);
             }
 
             /**
