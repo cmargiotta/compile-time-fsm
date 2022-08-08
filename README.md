@@ -1,5 +1,7 @@
 # Compile time finite state machine
 
+[![CodeFactor](https://www.codefactor.io/repository/github/cmargiotta/compile-time-fsm/badge)](https://www.codefactor.io/repository/github/cmargiotta/compile-time-fsm)
+
 The `fsm` provides an easy way to manage finite state machines, almost without overhead.
 
 This library requires C++20 and is based on meson build system.
