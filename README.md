@@ -12,6 +12,11 @@ $ meson build
 $ ninja -C build test
 ```
 
+To generate the single-include header, [quom](https://github.com/Viatorus/quom) is required:
+```bash
+$ source scripts/amalgamate.sh
+```
+
 ## Declaration 
 
 Every state and every handled event is simply a type, with only two mandatory requirements:
