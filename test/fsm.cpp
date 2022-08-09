@@ -94,13 +94,4 @@ TEST_CASE("FSM basic usage", "[fsm]")
 
     fsm(on);
     REQUIRE(fsm.get_current_state_id() == "ON");
-
-    BENCHMARK("Changing state 1000 times")
-    {
-        for (std::size_t i = 0; i < 500; ++i)
-        {
-            fsm(off);
-            fsm(on);
-        }
-    };
 }
