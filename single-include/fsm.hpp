@@ -159,7 +159,6 @@ namespace ctfsm
 
 #endif// TYPE_TRAITS_FUNCTION_SIGNATURE_HPP
 
-
 /**
  * @brief Build a concept that verifies the existence of the given member.
  */
@@ -341,7 +340,6 @@ namespace ctfsm
 
 #endif// UTILITY_TYPE_SET_HPP
 
-
 namespace ctfsm
 {
     /**
@@ -461,7 +459,6 @@ namespace ctfsm
 }// namespace ctfsm
 
 #endif// TYPE_TRAITS_TYPE_MAP_HPP
-
 
 MAKE_EXISTENCE_VERIFIER(on_enter)
 MAKE_EXISTENCE_VERIFIER(on_exit)
