@@ -89,7 +89,7 @@ struct switch_toggle
 Finally, to build an `fsm` from these states, doing: 
 
 ```cpp
-asters::fsm<on> state_machine; 
+ctfsm::fsm<on> state_machine; 
 ```
 
 is enough, all reachable states will be deduced from the provided initial state and `on` will be the starting state.
