@@ -25,7 +25,6 @@ struct A
 
 static_assert(!has_b<A>);
 static_assert(has_a<A>);
-static_assert(!has_c<A>);
 static_assert(has_c_method<A, int(int, float)>);
 static_assert(!has_c_method<A, int(int)>);
 

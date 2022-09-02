@@ -85,6 +85,8 @@ TEST_CASE("FSM basic usage", "[fsm]")
     REQUIRE(fsm.get_current_state_id() == "OFF");
     REQUIRE(state_on::switched_off);
 
+    REQUIRE_THROWS(fsm.handle_event(off));
+
     fsm.handle_event<switch_on>();
 
     REQUIRE(fsm.get_current_state_id() == "ON");

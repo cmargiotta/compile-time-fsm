@@ -207,7 +207,7 @@ namespace ctfsm
              * @param event
              */
             template<typename event_>
-            constexpr void handle_event(event_&& event) noexcept
+            constexpr void handle_event(event_&& event)
             {
                 std::visit(
                     [this, &event](auto&& current)
@@ -232,7 +232,7 @@ namespace ctfsm
              * @tparam event
              */
             template<std::default_initializable event>
-            constexpr void handle_event() noexcept
+            constexpr void handle_event()
             {
                 handle_event(event {});
             }
@@ -242,7 +242,7 @@ namespace ctfsm
              *
              * @param event
              */
-            constexpr void operator()(auto&& event) noexcept
+            constexpr void operator()(auto&& event)
             {
                 handle_event(event);
             }
