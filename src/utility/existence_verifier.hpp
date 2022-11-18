@@ -1,6 +1,6 @@
 /**
  * @file existence_verifier.hpp
- * @author Carmine Margiotta (car.margiotta@icloud.com)
+ * @author Carmine Margiotta (cmargiotta@posteo.net)
  *
  * @copyright Copyright (c) 2022
  */

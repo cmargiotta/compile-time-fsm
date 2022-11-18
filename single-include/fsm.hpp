@@ -1,6 +1,6 @@
 /**
  * @file fsm.hpp
- * @author Carmine Margiotta (car.margiotta@icloud.com)
+ * @author Carmine Margiotta (cmargiotta@posteo.net)
  *
  * @copyright Copyright (c) 2022
  */
@@ -16,7 +16,7 @@
 
 /**
  * @file existence_verifier.hpp
- * @author Carmine Margiotta (car.margiotta@icloud.com)
+ * @author Carmine Margiotta (cmargiotta@posteo.net)
  *
  * @copyright Copyright (c) 2022
  */
@@ -28,7 +28,7 @@
 
 /**
  * @file function_signature.hpp
- * @author Carmine Margiotta (car.margiotta@icloud.com)
+ * @author Carmine Margiotta (cmargiotta@posteo.net)
  *
  * @copyright Copyright (c) 2022
  */
@@ -181,7 +181,7 @@ namespace ctfsm
 
 /**
  * @file type_map.hpp
- * @author Carmine Margiotta (car.margiotta@icloud.com)
+ * @author Carmine Margiotta (cmargiotta@posteo.net)
  *
  * @copyright Copyright (c) 2022
  */
@@ -194,7 +194,7 @@ namespace ctfsm
 
 /**
  * @file type_set.hpp
- * @author Carmine Margiotta (car.margiotta@icloud.com)
+ * @author Carmine Margiotta (cmargiotta@posteo.net)
  *
  * @copyright Copyright (c) 2022
  */
