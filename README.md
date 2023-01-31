@@ -1,6 +1,7 @@
 # Compile time finite state machine
 
 [![CodeFactor](https://img.shields.io/codefactor/grade/github/cmargiotta/compile-time-fsm?style=for-the-badge)](https://www.codefactor.io/repository/github/cmargiotta/compile-time-fsm)
+![Alla pugna!](https://img.shields.io/badge/ALLA-PUGNA-F70808?style=for-the-badge)
 
 The `fsm` provides an easy way to manage finite state machines, almost without overhead.
 
