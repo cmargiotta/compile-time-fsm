@@ -77,12 +77,14 @@ TEST_CASE("FSM basic usage", "[fsm]")
     fsm.handle_event(on);
 
     REQUIRE(fsm.get_current_state_id() == "ON");
+    REQUIRE(fsm.is_current_state<state_on>());
     REQUIRE(state_on::on_entered);
     REQUIRE(on.transited);
 
     fsm.handle_event(switch_off());
 
     REQUIRE(fsm.get_current_state_id() == "OFF");
+    REQUIRE(fsm.is_current_state<state_off>());
     REQUIRE(state_on::switched_off);
 
     REQUIRE_THROWS(fsm.handle_event(off));
@@ -90,10 +92,16 @@ TEST_CASE("FSM basic usage", "[fsm]")
     fsm.handle_event<switch_on>();
 
     REQUIRE(fsm.get_current_state_id() == "ON");
+    REQUIRE(fsm.is_current_state<state_on>());
 
     fsm(switch_off());
     REQUIRE(fsm.get_current_state_id() == "OFF");
+    REQUIRE(fsm.is_current_state<state_off>());
 
     fsm(on);
     REQUIRE(fsm.get_current_state_id() == "ON");
+    REQUIRE(fsm.is_current_state<state_on>());
+
+    auto current_id = fsm.invoke_on_current([](auto&& current) { return current.id; });
+    REQUIRE(current_id == "ON");
 }

@@ -614,7 +614,8 @@ namespace ctfsm
             }
 
             template<class current_state, class target_state>
-            constexpr void handle_event_(auto&) requires(std::is_same_v<target_state, void>)
+            constexpr void handle_event_(auto&)
+                requires(std::is_same_v<target_state, void>)
             {
                 throw std::runtime_error("Unhandled transation");
             }
@@ -648,7 +649,7 @@ namespace ctfsm
              * @param event
              */
             template<typename event_>
-            constexpr void handle_event(event_&& event) noexcept
+            constexpr void handle_event(event_&& event)
             {
                 std::visit(
                     [this, &event](auto&& current)
@@ -673,7 +674,7 @@ namespace ctfsm
              * @tparam event
              */
             template<std::default_initializable event>
-            constexpr void handle_event() noexcept
+            constexpr void handle_event()
             {
                 handle_event(event {});
             }
@@ -683,7 +684,7 @@ namespace ctfsm
              *
              * @param event
              */
-            constexpr void operator()(auto&& event) noexcept
+            constexpr void operator()(auto&& event)
             {
                 handle_event(event);
             }
@@ -704,7 +705,18 @@ namespace ctfsm
             template<typename T>
             constexpr bool is_current_state() const noexcept
             {
-                return std::holds_alternative<T>(_current_state);
+                return std::holds_alternative<T*>(_current_state);
+            }
+
+            /**
+             * @brief Invoke the given lambda passing a reference to the current state
+             *
+             * @param lambda
+             * @return the lambda return value
+             */
+            constexpr auto invoke_on_current(auto lambda) noexcept
+            {
+                return std::visit([lambda](auto current) { return lambda(*current); }, _current_state);
             }
     };
 }// namespace ctfsm
