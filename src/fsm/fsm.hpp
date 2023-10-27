@@ -15,7 +15,6 @@
 #include <variant>
 
 #include "utility/existence_verifier.hpp"
-#include "utility/function_signature.hpp"
 #include "utility/type_map.hpp"
 #include "utility/type_set.hpp"
 
@@ -136,11 +135,14 @@ namespace ctfsm
             template<class current_state, class _event>
             constexpr void invoke_on_exit(current_state& current, _event& event) noexcept
             {
-                if constexpr (ctfsm::has_on_exit_method<current_state, void(_event&)>)
+                if constexpr (ctfsm::has_on_exit_method<current_state, _event&>)
                 {
+                    static_assert(!ctfsm::has_on_exit_method<current_state>,
+                                  "States cannot have both on_exit(event&) and on_exit()");
+
                     current.on_exit(event);
                 }
-                else if constexpr (ctfsm::has_on_exit_method<current_state, void()>)
+                else if constexpr (ctfsm::has_on_exit_method<current_state>)
                 {
                     current.on_exit();
                 }
@@ -149,11 +151,14 @@ namespace ctfsm
             template<class current_state, class _event>
             constexpr void invoke_on_enter(current_state& current, _event& event) noexcept
             {
-                if constexpr (ctfsm::has_on_enter_method<current_state, void(_event&)>)
+                if constexpr (ctfsm::has_on_enter_method<current_state, _event&>)
                 {
+                    static_assert(!ctfsm::has_on_enter_method<current_state>,
+                                  "States cannot have both on_enter(event&) and on_enter()");
+
                     current.on_enter(event);
                 }
-                else if constexpr (ctfsm::has_on_enter_method<current_state, void()>)
+                else if constexpr (ctfsm::has_on_enter_method<current_state>)
                 {
                     current.on_enter();
                 }
@@ -162,7 +167,7 @@ namespace ctfsm
             template<class _event>
             constexpr void invoke_on_transit(_event& event) noexcept
             {
-                if constexpr (!has_on_transit_method<_event, void()>)
+                if constexpr (!has_on_transit_method<_event>)
                 {
                     return;
                 }

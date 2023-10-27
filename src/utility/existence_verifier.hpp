@@ -10,8 +10,6 @@
 
 #include <type_traits>
 
-#include "function_signature.hpp"
-
 /**
  * @brief Build a concept that verifies the existence of the given member.
  */
@@ -19,15 +17,18 @@
     namespace ctfsm                                                                                \
     {                                                                                              \
         template<typename T>                                                                       \
-        concept has_##member = requires(T instance)                                                \
-        {                                                                                          \
-            std::declval<T>().member;                                                              \
-        };                                                                                         \
-        template<typename T, typename signature>                                                   \
-        concept has_##member##_method = requires(T instance)                                       \
-        {                                                                                          \
-            static_cast<to_member_signature_t<signature, T>>(&T::member);                          \
-        };                                                                                         \
+        concept has_##member = requires(T instance) { std::declval<T>().member; };                 \
+                                                                                                   \
+        template<typename T, typename... args>                                                     \
+        concept has_##member##_method = requires(T instance, args... arguments) {                  \
+            {                                                                                      \
+                instance.member(arguments...)                                                      \
+            } -> std::same_as<void>;                                                               \
+        } || (sizeof...(args) == 0 && requires(T instance) {                                       \
+                                            {                                                      \
+                                                instance.member()                                  \
+                                            } -> std::same_as<void>;                               \
+                                        });                                                        \
     }
 
 #endif// UTILITY_EXISTENCE_VERIFIER_HPP

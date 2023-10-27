@@ -38,17 +38,9 @@ struct state_on
             on_entered = true;
         }
 
-        void on_enter()
-        {
-        }
-
-        void on_exit(switch_off&)
-        {
-            switched_off = true;
-        }
-
         void on_exit()
         {
+            switched_off = true;
         }
 };
 
