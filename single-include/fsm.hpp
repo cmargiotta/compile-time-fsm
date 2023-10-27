@@ -716,7 +716,8 @@ namespace ctfsm
              */
             constexpr auto invoke_on_current(auto lambda) noexcept
             {
-                return std::visit([lambda](auto current) { return lambda(*current); }, _current_state);
+                return std::visit([this, lambda](auto current) { return lambda(*current, *this); },
+                                  _current_state);
             }
     };
 }// namespace ctfsm

@@ -102,6 +102,6 @@ TEST_CASE("FSM basic usage", "[fsm]")
     REQUIRE(fsm.get_current_state_id() == "ON");
     REQUIRE(fsm.is_current_state<state_on>());
 
-    auto current_id = fsm.invoke_on_current([](auto&& current) { return current.id; });
+    auto current_id = fsm.invoke_on_current([](auto&& current, auto& fsm) { return current.id; });
     REQUIRE(current_id == "ON");
 }
