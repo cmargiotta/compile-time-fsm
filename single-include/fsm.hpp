@@ -335,6 +335,12 @@ MAKE_EXISTENCE_VERIFIER(on_exit)
 MAKE_EXISTENCE_VERIFIER(on_transit)
 MAKE_EXISTENCE_VERIFIER(id)
 
+#ifdef __EXCEPTIONS
+#    define HANDLE_EVENT_RETURN_TYPE void
+#else
+#    define HANDLE_EVENT_RETURN_TYPE [[nodiscard]] bool
+#endif
+
 namespace ctfsm
 {
     /**
@@ -490,14 +496,18 @@ namespace ctfsm
             }
 
             template<class current_state, class target_state>
-            constexpr void handle_event_(auto&)
+            constexpr HANDLE_EVENT_RETURN_TYPE handle_event_(auto&)
                 requires(std::is_same_v<target_state, void>)
             {
+#ifdef __EXCEPTIONS
                 throw std::runtime_error("Unhandled transation");
+#else
+                return false;
+#endif
             }
 
             template<class current_state, class target_state>
-            constexpr void handle_event_(auto& event) noexcept
+            constexpr HANDLE_EVENT_RETURN_TYPE handle_event_(auto& event) noexcept
             {
                 invoke_on_exit(std::get<current_state>(_states), event);
                 invoke_on_transit(event);
@@ -506,6 +516,10 @@ namespace ctfsm
                 _current_state_id = &id_extractor<target_state>::id;
 
                 invoke_on_enter(std::get<target_state>(_states), event);
+
+#ifndef __EXCEPTIONS
+                return true;
+#endif
             }
 
         public:
@@ -525,9 +539,9 @@ namespace ctfsm
              * @param event
              */
             template<typename event_>
-            constexpr void handle_event(event_&& event)
+            constexpr HANDLE_EVENT_RETURN_TYPE handle_event(event_&& event)
             {
-                std::visit(
+                return std::visit(
                     [this, &event](auto&& current)
                     {
                         using current_state
@@ -539,7 +553,7 @@ namespace ctfsm
                         static_assert(current_state::transitions::valid,
                                       "transitions events must be unique");
 
-                        this->handle_event_<current_state, target_state>(event);
+                        return this->handle_event_<current_state, target_state>(event);
                     },
                     _current_state);
             }
