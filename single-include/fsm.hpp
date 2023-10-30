@@ -568,7 +568,11 @@ namespace ctfsm
              * @tparam event
              */
             template<std::default_initializable event>
-            constexpr void handle_event()
+#ifndef __EXCEPTIONS
+            [[nodiscard]]
+#endif
+            constexpr HANDLE_EVENT_RETURN_TYPE
+                handle_event()
             {
                 handle_event(event {});
             }
