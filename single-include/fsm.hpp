@@ -338,7 +338,7 @@ MAKE_EXISTENCE_VERIFIER(id)
 #ifdef __EXCEPTIONS
 #    define HANDLE_EVENT_RETURN_TYPE void
 #else
-#    define HANDLE_EVENT_RETURN_TYPE [[nodiscard]] bool
+#    define HANDLE_EVENT_RETURN_TYPE bool
 #endif
 
 namespace ctfsm
@@ -539,7 +539,11 @@ namespace ctfsm
              * @param event
              */
             template<typename event_>
-            constexpr HANDLE_EVENT_RETURN_TYPE handle_event(event_&& event)
+#ifndef __EXCEPTIONS
+            [[nodiscard]]
+#endif
+            constexpr HANDLE_EVENT_RETURN_TYPE
+                handle_event(event_&& event)
             {
                 return std::visit(
                     [this, &event](auto&& current)
