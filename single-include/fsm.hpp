@@ -386,7 +386,7 @@ namespace ctfsm
                     // Iterate through the states list and expand every state
                 private:
                     using state_set = ctfsm::type_set_merge<
-                        typename ctfsm::extract_values<typename state::transitions>::Values,
+                        typename ctfsm::extract_values<typename state::transitions>::values,
                         typename ctfsm::type_set_merge<std::tuple<state>, set>::set>;
 
                 public:
