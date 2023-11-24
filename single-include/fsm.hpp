@@ -455,10 +455,7 @@ namespace ctfsm
             {
                 if constexpr (ctfsm::has_on_exit_method<current_state, _event&>)
                 {
-                    static_assert(!ctfsm::has_on_exit_method<current_state>,
-                                  "States cannot have both on_exit(event&) and on_exit()");
-
-                    current.on_exit(event);
+                     current.on_exit(event);
                 }
                 else if constexpr (ctfsm::has_on_exit_method<current_state>)
                 {
@@ -471,9 +468,6 @@ namespace ctfsm
             {
                 if constexpr (ctfsm::has_on_enter_method<current_state, _event&>)
                 {
-                    static_assert(!ctfsm::has_on_enter_method<current_state>,
-                                  "States cannot have both on_enter(event&) and on_enter()");
-
                     current.on_enter(event);
                 }
                 else if constexpr (ctfsm::has_on_enter_method<current_state>)
