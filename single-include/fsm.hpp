@@ -35,15 +35,15 @@
         template<typename T>                                                                       \
         concept has_##member = requires(T instance) { std::declval<T>().member; };                 \
                                                                                                    \
-        template<typename T, typename... args>                                                     \
+        template<typename T, typename Ret, typename... args>                                       \
         concept has_##member##_method = requires(T instance, args... arguments) {                  \
             {                                                                                      \
                 instance.member(arguments...)                                                      \
-            } -> std::same_as<void>;                                                               \
+            } -> std::same_as<Ret>;                                                                \
         } || (sizeof...(args) == 0 && requires(T instance) {                                       \
                                             {                                                      \
                                                 instance.member()                                  \
-                                            } -> std::same_as<void>;                               \
+                                            } -> std::same_as<Ret>;                                \
                                         });                                                        \
     }
 
@@ -453,11 +453,11 @@ namespace ctfsm
             template<class current_state, class _event>
             constexpr void invoke_on_exit(current_state& current, _event& event) noexcept
             {
-                if constexpr (ctfsm::has_on_exit_method<current_state, _event&>)
+                if constexpr (ctfsm::has_on_exit_method<current_state, void, std::decay_t<_event>>)
                 {
-                     current.on_exit(event);
+                    current.on_exit(event);
                 }
-                else if constexpr (ctfsm::has_on_exit_method<current_state>)
+                else if constexpr (ctfsm::has_on_exit_method<current_state, void>)
                 {
                     current.on_exit();
                 }
@@ -466,11 +466,11 @@ namespace ctfsm
             template<class current_state, class _event>
             constexpr void invoke_on_enter(current_state& current, _event& event) noexcept
             {
-                if constexpr (ctfsm::has_on_enter_method<current_state, _event&>)
+                if constexpr (ctfsm::has_on_enter_method<current_state, void, std::decay_t<_event>>)
                 {
                     current.on_enter(event);
                 }
-                else if constexpr (ctfsm::has_on_enter_method<current_state>)
+                else if constexpr (ctfsm::has_on_enter_method<current_state, void>)
                 {
                     current.on_enter();
                 }
@@ -479,7 +479,7 @@ namespace ctfsm
             template<class _event>
             constexpr void invoke_on_transit(_event& event) noexcept
             {
-                if constexpr (!has_on_transit_method<_event>)
+                if constexpr (!has_on_transit_method<_event, void>)
                 {
                     return;
                 }
@@ -532,20 +532,18 @@ namespace ctfsm
              *
              * @param event
              */
-            template<typename event_>
 #ifndef __EXCEPTIONS
             [[nodiscard]]
 #endif
             constexpr HANDLE_EVENT_RETURN_TYPE
-                handle_event(event_&& event)
+                handle_event(auto& event)
             {
                 return std::visit(
-                    [this, &event](auto&& current)
+                    [this, &event](auto* current)
                     {
-                        using current_state
-                            = std::remove_pointer_t<std::remove_reference_t<decltype(current)>>;
+                        using current_state = std::remove_pointer_t<decltype(current)>;
                         using target_state =
-                            typename find_by_key<std::remove_reference_t<event_>,
+                            typename find_by_key<std::decay_t<decltype(event)>,
                                                  typename current_state::transitions>::result;
 
                         static_assert(current_state::transitions::valid,
@@ -554,6 +552,11 @@ namespace ctfsm
                         return this->handle_event_<current_state, target_state>(event);
                     },
                     _current_state);
+            }
+
+            constexpr HANDLE_EVENT_RETURN_TYPE handle_event(auto&& event)
+            {
+                return handle_event(event);
             }
 
             /**
