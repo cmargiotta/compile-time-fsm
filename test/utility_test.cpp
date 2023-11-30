@@ -1,7 +1,6 @@
 #include <type_traits>
 
 #include <utility/existence_verifier.hpp>
-#include <utility/function_signature.hpp>
 #include <utility/type_map.hpp>
 #include <utility/type_set.hpp>
 
@@ -21,12 +20,17 @@ struct A
         int a;
         int c(int, float);
         int c(double);
+        int d();
 };
 
 static_assert(!has_b<A>);
 static_assert(has_a<A>);
-static_assert(has_c_method<A, int(int, float)>);
-static_assert(!has_c_method<A, int(int)>);
+static_assert(has_c_method<A, int, int, float>);
+static_assert(has_c_method<A, int, double>);
+static_assert(has_d_method<A, int>);
+static_assert(has_c_method<A, int, int &, const float &>);
+static_assert(!has_c_method<A, float, int &, float>);
+static_assert(!has_c_method<A, int, A>);
 
 using map = type_map<std::pair<int, float>, std::pair<double, char>>;
 
@@ -59,15 +63,3 @@ static_assert(!contains<double, merge_res::delta>::value);
 static_assert(!contains<char, merge_res::delta>::value);
 static_assert(!contains<float, merge_res::delta>::value);
 static_assert(!contains<int, merge_res::delta>::value);
-
-void foo(int);
-int  bar(double);
-
-using foo_signature = decltype(foo);
-using bar_signature = decltype(bar);
-
-static_assert(std::is_same_v<return_type_t<foo_signature>, void>);
-static_assert(std::is_same_v<return_type_t<bar_signature>, int>);
-static_assert(std::is_same_v<arg_type_t<0, foo_signature>, int>);
-static_assert(std::is_same_v<arg_type_t<0, bar_signature>, double>);
-static_assert(number_of_args_v<foo_signature> == 1);
