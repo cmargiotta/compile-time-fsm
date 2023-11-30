@@ -19,15 +19,15 @@
         template<typename T>                                                                       \
         concept has_##member = requires(T instance) { std::declval<T>().member; };                 \
                                                                                                    \
-        template<typename T, typename... args>                                                     \
+        template<typename T, typename Ret, typename... args>                                       \
         concept has_##member##_method = requires(T instance, args... arguments) {                  \
             {                                                                                      \
                 instance.member(arguments...)                                                      \
-            } -> std::same_as<void>;                                                               \
+            } -> std::same_as<Ret>;                                                                \
         } || (sizeof...(args) == 0 && requires(T instance) {                                       \
                                             {                                                      \
                                                 instance.member()                                  \
-                                            } -> std::same_as<void>;                               \
+                                            } -> std::same_as<Ret>;                                \
                                         });                                                        \
     }
 
