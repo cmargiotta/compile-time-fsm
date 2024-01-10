@@ -1,2 +1,2 @@
-subdir('fsm')
 subdir('utility')
+subdir('fsm')
