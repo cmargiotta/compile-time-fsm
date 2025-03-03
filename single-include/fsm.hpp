@@ -528,6 +528,14 @@ namespace ctfsm
             }
 
             /**
+             * @brief Reset the finite state machine */
+            constexpr auto reset() noexcept -> void
+            {
+                _current_state    = &std::get<initial_state>(_states);
+                _current_state_id = &id_extractor<initial_state>::id;
+            }
+
+            /**
              * @brief Handles an incoming event, as mapped in current_state::transitions
              *
              * @param event
