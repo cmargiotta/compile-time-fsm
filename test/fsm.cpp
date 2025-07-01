@@ -30,8 +30,8 @@ struct state_on;
 
 struct state_on
 {
-        using transitions
-            = ctfsm::type_map<std::pair<switch_on, state_on>, std::pair<switch_off, state_off>>;
+        using transitions = ctfsm::transition_map<ctfsm::transition<switch_on, state_on>,
+                                                  ctfsm::transition<switch_off, state_off>>;
 
         static constexpr std::string_view id {"ON"};
         static constinit inline bool      switched_off = false;
@@ -57,10 +57,16 @@ struct state_on
 struct state_off
 {
         using transitions
-            = ctfsm::type_map<std::pair<switch_on, state_on>, std::pair<force, state_on>>;
+            = ctfsm::transition_map<ctfsm::transition<switch_on, state_on>, ctfsm::transition<force, state_on>>;
 
         static constexpr std::string_view id {"OFF"};
         static constinit inline bool      entered = false;
+        static constinit inline bool      forced  = false;
+
+        void on_exit(force)
+        {
+            forced = true;
+        }
 
         void on_enter()
         {
@@ -74,42 +80,44 @@ TEST_CASE("FSM basic usage", "[fsm]")
     switch_on            on;
     switch_off           off;
 
+    static_assert(ctfsm::pvt::valid_fsm<decltype(fsm)>);
+
     REQUIRE(fsm.get_current_state_id() == "ON");
     REQUIRE(!state_on::on_entered);
 
-    fsm.handle_event(on);
+    REQUIRE(fsm.handle_event(on));
 
     REQUIRE(fsm.get_current_state_id() == "ON");
     REQUIRE(fsm.is_current_state<state_on>());
     REQUIRE(state_on::on_entered);
     REQUIRE(on.transited);
 
-    fsm.handle_event(switch_off());
+    REQUIRE(fsm.handle_event(switch_off()));
 
     REQUIRE(fsm.get_current_state_id() == "OFF");
     REQUIRE(fsm.is_current_state<state_off>());
     REQUIRE(state_on::switched_off);
 
-    REQUIRE_THROWS(fsm.handle_event(off));
+    REQUIRE_FALSE(fsm.handle_event(off));
 
-    fsm.handle_event<switch_on>();
+    REQUIRE(fsm.handle_event<switch_on>());
 
     REQUIRE(fsm.get_current_state_id() == "ON");
     REQUIRE(fsm.is_current_state<state_on>());
 
-    fsm(switch_off());
+    REQUIRE(fsm(switch_off()));
     REQUIRE(fsm.get_current_state_id() == "OFF");
     REQUIRE(fsm.is_current_state<state_off>());
 
-    fsm(on);
+    REQUIRE(fsm(on));
     REQUIRE(fsm.get_current_state_id() == "ON");
     REQUIRE(fsm.is_current_state<state_on>());
 
-    fsm(switch_off());
+    REQUIRE(fsm(switch_off()));
     REQUIRE(fsm.get_current_state_id() == "OFF");
     REQUIRE(fsm.is_current_state<state_off>());
 
-    fsm(force {});
+    REQUIRE(fsm(force {}));
     REQUIRE(fsm.get_current_state_id() == "ON");
     REQUIRE(state_on::forced);
     REQUIRE(fsm.is_current_state<state_on>());
@@ -119,4 +127,65 @@ TEST_CASE("FSM basic usage", "[fsm]")
 
     fsm.reset();
     REQUIRE(fsm.get_current_state_id() == "ON");
+}
+
+struct move_to_switch
+{
+};
+
+struct robot_idle;
+
+struct robot_discharging
+{
+        using transitions = ctfsm::transition_map<ctfsm::transition<move_to_switch, robot_idle>>;
+
+        static constexpr std::string_view id {"DISCHARGING"};
+};
+
+struct robot_idle
+{
+        using transitions = ctfsm::transition_map<ctfsm::nested<switch_on, state_on, force>,
+                                                  ctfsm::transition<force, robot_discharging>>;
+
+        static constexpr std::string_view id {"IDLE"};
+        static constinit inline bool      force_detected = false;
+
+        void on_exit(force)
+        {
+            force_detected = true;
+        }
+};
+
+TEST_CASE("FSM with nested FSM", "[fsm]")
+{
+    ctfsm::fsm<robot_idle> fsm;
+
+    static_assert(ctfsm::pvt::valid_fsm<decltype(fsm)>);
+
+    REQUIRE(fsm.get_current_state_id() == "IDLE");
+
+    REQUIRE(fsm.handle_event<switch_on>());
+    // We are in a nested FSM, but from outside we are still in IDLE
+    REQUIRE(fsm.get_current_state_id() == "IDLE");
+
+    REQUIRE_FALSE(fsm.handle_event<force>());
+    REQUIRE(fsm.handle_event<switch_off>());
+    REQUIRE(fsm.get_current_state_id() == "IDLE");
+
+    state_off::forced = false;
+    REQUIRE(fsm.handle_event<force>());
+    REQUIRE(fsm.get_current_state_id() == "DISCHARGING");
+    REQUIRE(state_off::forced);
+
+    // Check if the nested FSM state is coherent
+    REQUIRE(fsm.handle_event<move_to_switch>());
+    REQUIRE(fsm.get_current_state_id() == "IDLE");
+
+    // Same sequence
+    REQUIRE(fsm.handle_event<switch_on>());
+    REQUIRE(fsm.get_current_state_id() == "IDLE");
+
+    REQUIRE_FALSE(fsm.handle_event<force>());
+    REQUIRE(fsm.handle_event<switch_off>());
+    REQUIRE(fsm.get_current_state_id() == "IDLE");
 }

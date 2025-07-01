@@ -1,12 +1,12 @@
+#ifndef CTFSM_UTILITY_EXISTENCE_VERIFIER_HPP_
+#define CTFSM_UTILITY_EXISTENCE_VERIFIER_HPP_
+
 /**
  * @file existence_verifier.hpp
- * @author Carmine Margiotta (cmargiotta@posteo.net)
+ * @author Carmine Margiotta (email@cmargiotta.net)
  *
- * @copyright Copyright (c) 2022
+ * @copyright Copyright (c) 2025
  */
-
-#ifndef UTILITY_EXISTENCE_VERIFIER_HPP
-#define UTILITY_EXISTENCE_VERIFIER_HPP
 
 #include <type_traits>
 
@@ -21,14 +21,11 @@
                                                                                                    \
         template<typename T, typename Ret, typename... args>                                       \
         concept has_##member##_method = requires(T instance, args... arguments) {                  \
-            {                                                                                      \
-                instance.member(arguments...)                                                      \
-            } -> std::same_as<Ret>;                                                                \
+            { instance.member(arguments...) } -> std::same_as<Ret>;                                \
         } || (sizeof...(args) == 0 && requires(T instance) {                                       \
-                                            {                                                      \
-                                                instance.member()                                  \
-                                            } -> std::same_as<Ret>;                                \
+                                            { instance.member() } -> std::same_as<Ret>;            \
                                         });                                                        \
     }
 
-#endif// UTILITY_EXISTENCE_VERIFIER_HPP
+
+#endif /* CTFSM_UTILITY_EXISTENCE_VERIFIER_HPP_*/

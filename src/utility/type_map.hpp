@@ -1,13 +1,14 @@
+#ifndef CTFSM_UTILITY_TYPE_MAP_HPP_
+#define CTFSM_UTILITY_TYPE_MAP_HPP_
+
 /**
  * @file type_map.hpp
- * @author Carmine Margiotta (cmargiotta@posteo.net)
+ * @author Carmine Margiotta (email@cmargiotta.net)
  *
- * @copyright Copyright (c) 2022
+ * @copyright Copyright (c) 2025
  */
 
-#ifndef TYPE_TRAITS_TYPE_MAP_HPP
-#define TYPE_TRAITS_TYPE_MAP_HPP
-
+#include <concepts>
 #include <tuple>
 #include <type_traits>
 
@@ -15,6 +16,15 @@
 
 namespace ctfsm
 {
+    /**
+     * @brief A type indexable by a type_map
+     */
+    template<class T>
+    concept mappable = requires() {
+        typename T::key;
+        typename T::value;
+    };
+
     /**
      * @brief Extract an std::tuple of keys from the given type map
      *
@@ -32,12 +42,11 @@ namespace ctfsm
     struct extract_values;
 
     /**
-     * @brief An std::tuple of std::pair is considered a type_map, where the pair is composed of
-     * <Key, Value>
+     * @brief An std::tuple of mappable is considered a type_map
      *
      * @tparam data
      */
-    template<class... data_>
+    template<mappable... data_>
     struct type_map;
 
     /**
@@ -49,9 +58,8 @@ namespace ctfsm
     template<class key, class map>
     struct find_by_key;
 
-    template<class key, class current_key, class value, class... data>
-    struct find_by_key<key, type_map<std::pair<current_key, value>, data...>>
-        : find_by_key<key, type_map<data...>>
+    template<class key, mappable current, class... data>
+    struct find_by_key<key, type_map<current, data...>> : find_by_key<key, type_map<data...>>
     {
             // Key has not been found, keep searching it
     };
@@ -64,20 +72,21 @@ namespace ctfsm
             using result = void;
     };
 
-    template<class key, class value, class... data>
-    struct find_by_key<key, type_map<std::pair<key, value>, data...>>
+    template<class key, mappable current, class... data>
+        requires(std::same_as<key, typename current::key>)
+    struct find_by_key<key, type_map<current, data...>>
     {
             // Key has been found, expose the result
         public:
-            using result = value;
+            using result = typename current::value;
     };
 
-    template<class key, class value, class... data>
-    struct extract_values<type_map<std::pair<key, value>, data...>>
+    template<mappable current, mappable... data>
+    struct extract_values<type_map<current, data...>>
     {
         public:
             using values = decltype(std::tuple_cat(
-                std::declval<std::tuple<value>>(),
+                std::declval<std::tuple<typename current::value>>(),
                 std::declval<typename extract_values<type_map<data...>>::values>()));
     };
 
@@ -89,13 +98,13 @@ namespace ctfsm
             using values = std::tuple<>;
     };
 
-    template<class key, class value, class... data>
-    struct extract_keys<type_map<std::pair<key, value>, data...>>
+    template<mappable current, class... data>
+    struct extract_keys<type_map<current, data...>>
     {
             // Iterating through the Map and composing the Keys tuple
         public:
             using keys = decltype(std::tuple_cat(
-                std::declval<std::tuple<key>>(),
+                std::declval<std::tuple<typename current::key>>(),
                 std::declval<typename extract_keys<type_map<data...>>::keys>()));
     };
 
@@ -107,15 +116,16 @@ namespace ctfsm
             using keys = std::tuple<>;
     };
 
-    template<class key, class value, class... data_>
-    struct type_map<std::pair<key, value>, data_...>
+    template<mappable current, mappable... data_>
+    struct type_map<current, data_...>
     {
         private:
-            using type = type_map<std::pair<key, value>, data_...>;
+            using type = type_map<current, data_...>;
 
         public:
-            using data = std::tuple<std::pair<key, value>, data_...>;
+            using data = std::tuple<current, data_...>;
 
+            // Check if every key is unique
             static constexpr bool valid
                 = (std::tuple_size<typename type_set<typename extract_keys<type>::keys>::set>::value
                    == std::tuple_size<data>::value);
@@ -131,4 +141,4 @@ namespace ctfsm
     };
 }// namespace ctfsm
 
-#endif// TYPE_TRAITS_TYPE_MAP_HPP
+#endif /* CTFSM_UTILITY_TYPE_MAP_HPP_*/
