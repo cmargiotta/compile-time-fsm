@@ -19,15 +19,15 @@ $ source scripts/amalgamate.sh
 ```
 
 ## Usage
-### Declaration 
+### Declaration
 
 Every state and every handled event is simply a type, with only two mandatory requirements:
 - a state **must** provide a public alias, `transitions`, that is a `ctfsm::type_map` of `event`s and their relative target states, basically the edges list of a graph, events must be unique;
 - a state **must** be defaultly constructible.
 
-And can, **optionally**: 
+And can, **optionally**:
 - expose a `void on_enter()` function, that will be called every time the fsm enters in this state; optionally it can receive the event instance: `void on_enter(event& e)`;
-- expose a `void on_exit()` function, that will be called every time the fsm exits from this state, optionally it can receive the event instance: `void on_exit(event& e)`; 
+- expose a `void on_exit()` function, that will be called every time the fsm exits from this state, optionally it can receive the event instance: `void on_exit(event& e)`;
 
 ```cpp
 struct on;
@@ -38,9 +38,9 @@ struct blackout {}
 
 struct on
 {
-	using transitions = ctfsm::type_map<
-		std::pair<switch_toggle, off>,
-		std::pair<blackout, off>
+	using transitions = ctfsm::transition_map<
+		ctfsm::transition<switch_toggle, off>,
+		ctfsm::transition<blackout, off>
 	>;
 
 	void on_exit(blackout& event)
@@ -48,7 +48,7 @@ struct on
 		...
 	}
 
-	void on_exit() 
+	void on_exit()
 	{
 		...
 	}
@@ -56,8 +56,8 @@ struct on
 
 struct off
 {
-	using transitions = ctfsm::type_map<
-		std::pair<switch_toggle, on>
+	using transitions = ctfsm::transition_map<
+		ctfsm::transition<switch_toggle, on>
 	>;
 
 	void on_enter()
@@ -67,16 +67,16 @@ struct off
 };
 ```
 
-In this case: 
-- `on` handles the event triggered when changing state from `on` with the `blackout` event with a different handler than other exit events; 
+In this case:
+- `on` handles the event triggered when changing state from `on` with the `blackout` event with a different handler than other exit events;
 - `off` handles every `on_enter` event;
 
-While `switch_toggle` and `blackout` are valid events, it can be useful to include data and event handlers in them: 
+While `switch_toggle` and `blackout` are valid events, it can be useful to include data and event handlers in them:
 
 ```cpp
 struct switch_toggle
 {
-	int data1; 
+	int data1;
 	std::string data2;
 
 	void on_transit()
@@ -88,13 +88,28 @@ struct switch_toggle
 
 `switch_toggle` provides a payload that will be accessible to states in their event handlers. The on_transit event handler will be triggered every time the state machine handles an event of this type.
 
-Finally, to build an `fsm` from these states, doing: 
+Finally, to build an `fsm` from these states, doing:
 
 ```cpp
-ctfsm::fsm<on> state_machine; 
+ctfsm::fsm<on> state_machine;
 ```
 
 is enough, all reachable states will be deduced from the provided initial state and `on` will be the starting state.
+
+### Nested state machines
+
+A `transition_map` can contain a mixed list of `ctfm::transition`, as shown in the previous section, and `ctfsm::nested`.
+
+A nested FSM can be specified as:
+
+``` cpp
+ctfsm::nested<Event, Init, Exit>
+```
+
+Where:
+- `Event` is the event that triggers the transition;
+- `Init` is the initial state of the nested FSM;
+- `Exit` is the exit event: when an event of type `Exit` is accepted by the nested FSM, the parent state becomes the current state
 
 ### Lifetimes
 
@@ -103,22 +118,22 @@ Their duration is exactly the same of the fsm that owns them.
 
 ### Handling events
 
-Given an event instance, 
+Given an event instance,
 
 ```cpp
-event t; 
+event t;
 ```
 
-to trigger a state change in the fsm: 
+to trigger a state change in the fsm:
 
 ```cpp
-state_machine.handle_event(t); 
+state_machine.handle_event(t);
 ```
 
-or 
+or
 
 ```cpp
-state_machine(t); 
+state_machine(t);
 ```
 
 This call will trigger, in this order:
@@ -127,10 +142,10 @@ This call will trigger, in this order:
 2. `t.on_transit()` if available;
 3. `next_state.on_enter(event&)` if available, `.on_enter()` otherwise;
 
-If the event is default initializable, it is possible to: 
+If the event is default initializable, it is possible to:
 
 ```cpp
-state_machine.handle_event<event>(); 
+state_machine.handle_event<event>();
 ```
 
 ### Talking with state instances
@@ -143,7 +158,7 @@ fsm.invoke_on_current([](auto& current_state, auto& fsm) {
 });
 ```
 
-This example implies that every state of `fsm` provides a function `.work` that takes a reference to the fsm itself. 
+This example implies that every state of `fsm` provides a function `.work` that takes a reference to the fsm itself.
 This allows to update the fsm state inside an `invoke_on_current` execution. The operation sequence in this case is:
 1. `invoke_on_current` is invoked;
 2. inside it, an `fsm.handle_event` is triggered;
