@@ -47,6 +47,9 @@ namespace ctfsm
     template<class initial_state, class _exit_event = void, class _parent_state = void>
     class fsm
     {
+            template<class I, class E, class P>
+            friend class fsm;
+
         private:
             template<class states, class set = std::tuple<>>
             struct state_expander;
@@ -304,6 +307,26 @@ namespace ctfsm
                 return true;
             }
 
+            constexpr auto invoke_on_current(auto lambda, auto& injected_parent) noexcept
+            {
+                return std::visit(
+                    [this, lambda, &injected_parent](auto current) mutable
+                    {
+                        using current_state = std::remove_pointer_t<std::decay_t<decltype(current)>>;
+
+                        if constexpr (pvt::valid_fsm<current_state>)
+                        {
+                            // Current is a nested FSM
+                            return current->invoke_on_current(lambda, injected_parent);
+                        }
+                        else
+                        {
+                            return lambda(*current, injected_parent);
+                        }
+                    },
+                    _current_state);
+            }
+
         public:
             /**
              * @brief Default constructor, defaulty constructs every state and sets the initial
@@ -349,7 +372,7 @@ namespace ctfsm
                                 typename find_by_key<event_t, typename current_state::transitions>::result>::result;
 
                             static_assert(current_state::transitions::valid,
-                                          "transitions events must be unique");
+                                          "Transitions events must be unique");
 
                             return this->handle_event_<current_state, target_state>(event);
                         }
@@ -442,22 +465,7 @@ namespace ctfsm
              */
             constexpr auto invoke_on_current(auto lambda) noexcept
             {
-                return std::visit(
-                    [this, lambda](auto current)
-                    {
-                        using current_state = std::decay_t<decltype(current)>;
-
-                        if constexpr (pvt::valid_fsm<current_state>)
-                        {
-                            // Current is a nested FSM
-                            *current.invoke_on_current(lambda);
-                        }
-                        else
-                        {
-                            return lambda(*current, *this);
-                        }
-                    },
-                    _current_state);
+                return invoke_on_current(std::move(lambda), *this);
             }
     };
 

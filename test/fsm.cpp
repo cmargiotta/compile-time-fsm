@@ -52,6 +52,11 @@ struct state_on
         {
             switched_off = true;
         }
+
+        auto work(auto& fsm) -> bool
+        {
+            return fsm.template handle_event<switch_off>();
+        }
 };
 
 struct state_off
@@ -71,6 +76,11 @@ struct state_off
         void on_enter()
         {
             entered = true;
+        }
+
+        auto work(auto& fsm) -> bool
+        {
+            return fsm.template handle_event<force>();
         }
 };
 
@@ -140,6 +150,11 @@ struct robot_discharging
         using transitions = ctfsm::transition_map<ctfsm::transition<move_to_switch, robot_idle>>;
 
         static constexpr std::string_view id {"DISCHARGING"};
+
+        auto work(auto& fsm) -> bool
+        {
+            return fsm.template handle_event<move_to_switch>();
+        }
 };
 
 struct robot_idle
@@ -154,7 +169,37 @@ struct robot_idle
         {
             force_detected = true;
         }
+
+        auto work(auto& fsm) -> bool
+        {
+            return fsm.template handle_event<switch_on>();
+        }
 };
+
+TEST_CASE("FSM with nested FSM handling with internal methods", "[fsm]")
+{
+    ctfsm::fsm<robot_idle> fsm;
+
+    static_assert(ctfsm::pvt::valid_fsm<decltype(fsm)>);
+
+    REQUIRE(fsm.get_current_state_id() == "IDLE");
+    REQUIRE(fsm.invoke_on_current([](auto& state, auto& /*fsm*/) { return state.id; }) == "IDLE");
+
+    REQUIRE(fsm.invoke_on_current([](auto& state, auto& fsm) { return state.work(fsm); }));
+    // We are in a nested FSM (switch_on), but from outside we are still in IDLE
+    REQUIRE(fsm.get_current_state_id() == "IDLE");
+    REQUIRE(fsm.invoke_on_current([](auto& state, auto& /*fsm*/) { return state.id; }) == "ON");
+
+    // State on -> state off
+    REQUIRE(fsm.invoke_on_current([](auto& state, auto& fsm) { return state.work(fsm); }));
+    REQUIRE(fsm.invoke_on_current([](auto& state, auto& /*fsm*/) { return state.id; }) == "OFF");
+    REQUIRE(fsm.get_current_state_id() == "IDLE");
+
+    // State off sends force
+    REQUIRE(fsm.invoke_on_current([](auto& state, auto& fsm) { return state.work(fsm); }));
+    REQUIRE(fsm.invoke_on_current([](auto& state, auto& /*fsm*/) { return state.id; }) == "DISCHARGING");
+    REQUIRE(fsm.get_current_state_id() == "DISCHARGING");
+}
 
 TEST_CASE("FSM with nested FSM", "[fsm]")
 {
