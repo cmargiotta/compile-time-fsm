@@ -29,7 +29,7 @@ namespace ctfsm
     {
         template<class T>
         concept valid_fsm = requires(T fsm) {
-            typename T::exit_event;
+            typename T::exit_events;
             typename T::parent_state;
 
             {
@@ -44,7 +44,7 @@ namespace ctfsm
      *
      * @tparam state
      */
-    template<class initial_state, class _exit_event = void, class _parent_state = void>
+    template<class initial_state, class _exit_events = std::tuple<>, class _parent_state = void>
     class fsm
     {
             template<class I, class E, class P>
@@ -222,7 +222,7 @@ namespace ctfsm
             variant_builder_t<typename states::states, typename states::fsms> _current_state;
             const id_type*                                                    _current_state_id;
 
-            using exit_event   = _exit_event;
+            using exit_events  = _exit_events;
             using parent_state = _parent_state;
 
         private:
@@ -280,7 +280,7 @@ namespace ctfsm
                 // On exit will always be invoked
                 invoke_on_exit(std::get<current_state>(_states), event);
 
-                if constexpr (std::same_as<event_t, _exit_event>)
+                if constexpr (ctfsm::contains<event_t, exit_events>::value)
                 {
                     // This is an exit event, reset the fsm and return
                     reset();
@@ -378,7 +378,7 @@ namespace ctfsm
                         }
                         else
                         {
-                            if constexpr (std::same_as<typename current_state::exit_event, event_t>)
+                            if constexpr (ctfsm::contains<event_t, typename current_state::exit_events>::value)
                             {
                                 // This event is an exit event for the nested fsm
 
@@ -476,11 +476,11 @@ namespace ctfsm
             using value = Target;
     };
 
-    template<typename Event, typename Nested_Fsm_Initial_State, typename Exit_Event>
+    template<typename Event, typename Nested_Fsm_Initial_State, typename... Exit_Events>
     struct nested
     {
             using key   = Event;
-            using value = fsm<Nested_Fsm_Initial_State, Exit_Event>;
+            using value = fsm<Nested_Fsm_Initial_State, std::tuple<Exit_Events...>>;
     };
 
     template<mappable... data>

@@ -25,6 +25,10 @@ struct force
 {
 };
 
+struct explode
+{
+};
+
 struct state_off;
 struct state_on;
 
@@ -61,8 +65,9 @@ struct state_on
 
 struct state_off
 {
-        using transitions
-            = ctfsm::transition_map<ctfsm::transition<switch_on, state_on>, ctfsm::transition<force, state_on>>;
+        using transitions = ctfsm::transition_map<ctfsm::transition<switch_on, state_on>,
+                                                  ctfsm::transition<force, state_on>,
+                                                  ctfsm::transition<explode, state_off>>;
 
         static constexpr std::string_view id {"OFF"};
         static constinit inline bool      entered = false;
@@ -80,7 +85,7 @@ struct state_off
 
         auto work(auto& fsm) -> bool
         {
-            return fsm.template handle_event<force>();
+            return fsm.template handle_event<explode>();
         }
 };
 
@@ -159,7 +164,7 @@ struct robot_discharging
 
 struct robot_idle
 {
-        using transitions = ctfsm::transition_map<ctfsm::nested<switch_on, state_on, force>,
+        using transitions = ctfsm::transition_map<ctfsm::nested<switch_on, state_on, force, explode>,
                                                   ctfsm::transition<force, robot_discharging>>;
 
         static constexpr std::string_view id {"IDLE"};
@@ -195,10 +200,10 @@ TEST_CASE("FSM with nested FSM handling with internal methods", "[fsm]")
     REQUIRE(fsm.invoke_on_current([](auto& state, auto& /*fsm*/) { return state.id; }) == "OFF");
     REQUIRE(fsm.get_current_state_id() == "IDLE");
 
-    // State off sends force
+    // State off sends explode
     REQUIRE(fsm.invoke_on_current([](auto& state, auto& fsm) { return state.work(fsm); }));
-    REQUIRE(fsm.invoke_on_current([](auto& state, auto& /*fsm*/) { return state.id; }) == "DISCHARGING");
-    REQUIRE(fsm.get_current_state_id() == "DISCHARGING");
+    REQUIRE(fsm.invoke_on_current([](auto& state, auto& /*fsm*/) { return state.id; }) == "IDLE");
+    REQUIRE(fsm.get_current_state_id() == "IDLE");
 }
 
 TEST_CASE("FSM with nested FSM", "[fsm]")
