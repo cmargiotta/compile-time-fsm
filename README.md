@@ -186,7 +186,7 @@ This allows to update the fsm state inside an `invoke_on_current` execution. The
 | `constexpr auto invoke_on_current(auto lambda) noexcept` | Lambda must be invocable with a reference to the current state instance and the fsm itself. The value returned by lambda is forwarded to the caller. |
 
 ### State
-- A state class must provide a `transitions` alias, a `ctfs::type_map` composed by `std::pair`s where the first type is an event and the second type is the target state after that event is triggered. If no `transitions` alias is provided, the state will be a sink state.
+- A state class must provide a `transitions` alias, a `ctfs::type_map` composed by `ctfsm::transition`s or `ctfsm::nested`s. If no `transitions` alias is provided, the state will be a sink state.
 - Each state can provide a publicly accessible `id` field. The library will use this field only if every state of the FSM provides an `id` field of the same type.
 - A state can handle `exit` events, which are triggered when the FSM changes state while it is the current state. An unlimited number of `void on_exit(E& event)` overloads and a `void on_exit()` method can be provided. The no-argument handler will be invoked only for events that do not have a specific overload. A state without `exit` handlers is also completely valid.
 - A state can handle `enter` events, which are triggered when the FSM changes state while it is the target state. An unlimited number of `void on_enter(E& event)` overloads and a `void on_enter()` method can be provided. The no-argument handler will be invoked only for events that do not have a specific overload. A state without `enter` handlers is also completely valid.
