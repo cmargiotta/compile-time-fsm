@@ -1,6 +1,5 @@
 # Compile time finite state machine
 
-[![CodeFactor](https://img.shields.io/codefactor/grade/github/cmargiotta/compile-time-fsm?style=for-the-badge)](https://www.codefactor.io/repository/github/cmargiotta/compile-time-fsm)
 ![Alla pugna!](https://img.shields.io/badge/ALLA-PUGNA-F70808?style=for-the-badge)
 
 The `fsm` provides an easy way to manage finite state machines, almost without overhead.
@@ -13,9 +12,15 @@ $ meson build
 $ ninja -C build test
 ```
 
-To generate the single-include header, [quom](https://github.com/Viatorus/quom) is required:
+Or, to be more concise:
+
+``` bash
+$ make test
+```
+
+To generate the single-include header:
 ```bash
-$ source scripts/amalgamate.sh
+$ make single_include
 ```
 
 ## Usage
@@ -103,13 +108,13 @@ A `transition_map` can contain a mixed list of `ctfm::transition`, as shown in t
 A nested FSM can be specified as:
 
 ``` cpp
-ctfsm::nested<Event, Init, Exit>
+ctfsm::nested<Event, Init, Exit...>
 ```
 
 Where:
 - `Event` is the event that triggers the transition;
 - `Init` is the initial state of the nested FSM;
-- `Exit` is the exit event: when an event of type `Exit` is accepted by the nested FSM, the parent state becomes the current state
+- `Exit...` is a list of exit events: when an event contained in `Exit...` is accepted by the nested FSM, the parent state becomes the current state; if that event is accepted by the parent state too, it is automatically forwarded to it via an `handle_event`.
 
 ### Lifetimes
 
