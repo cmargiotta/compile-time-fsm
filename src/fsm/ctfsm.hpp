@@ -52,7 +52,7 @@ namespace ctfsm
                     static_assert(valid_fsm<checked_fsm>);
                 }
 
-                [[nodiscard]] constexpr auto handle_event(auto& event) -> bool
+                constexpr auto handle_event(auto& event) -> bool
                 {
                     using event_t = std::decay_t<decltype(event)>;
 
@@ -70,7 +70,7 @@ namespace ctfsm
                 }
 
                 template<std::default_initializable event>
-                [[nodiscard]] constexpr auto handle_event() -> bool
+                constexpr auto handle_event() -> bool
                 {
                     return handle_event(event {});
                 }

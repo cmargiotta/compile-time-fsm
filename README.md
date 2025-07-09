@@ -174,9 +174,11 @@ This allows to update the fsm state inside an `invoke_on_current` execution. The
 
 #### Transition validation
 
-When events are processed directly inside states, `ctfsm` can make strong assumptions at compile time about the current state: this allows a validation of **every** transition that happens inside an `invoke_on_current` call.
+When events are processed directly inside states, `ctfsm` can make strong assumptions at compile time about the current state: this allows a transparent validation of **every** transition that happens inside an `invoke_on_current` call.
 
 If an invalid transition is detected, a static assertion with message `"Transition not admissible"` fails.
+
+`handle_event` in this context are no more `[[nodiscard]]` and their return value will always be `true` because they cannot fail.
 
 ## API documentation
 
