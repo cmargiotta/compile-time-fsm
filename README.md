@@ -172,6 +172,12 @@ This allows to update the fsm state inside an `invoke_on_current` execution. The
 5. `on_enter` of the next state is invoked, if present;
 6. `invoke_on_current` execution continues.
 
+#### Transition validation
+
+When events are processed directly inside states, `ctfsm` can make strong assumptions at compile time about the current state: this allows a validation of **every** transition that happens inside an `invoke_on_current` call.
+
+If an invalid transition is detected, a static assertion with message `"Transition not admissible"` fails.
+
 ## API documentation
 
 ### FSM

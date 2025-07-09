@@ -36,6 +36,45 @@ namespace ctfsm
                 fsm.invoke_on_current([](auto s, auto & fsm) { return true; })
             } -> std::same_as<bool>;
         };
+
+        template<class current_state, class fsm>
+        class checked_fsm : public fsm
+        {
+                // Current state is available at compile time, this can be used to validate
+                // transitions
+
+            private:
+                fsm& instance;
+
+            public:
+                constexpr checked_fsm(fsm& instance): instance {instance}
+                {
+                    static_assert(valid_fsm<checked_fsm>);
+                }
+
+                [[nodiscard]] constexpr auto handle_event(auto& event) -> bool
+                {
+                    using event_t = std::decay_t<decltype(event)>;
+
+                    static_assert(
+                        !std::same_as<typename ctfsm::find_by_key<event_t, typename current_state::transitions>::result,
+                                      void>,
+                        "Transition not admissible");
+
+                    return instance.handle_event(event);
+                }
+
+                constexpr auto handle_event(auto&& event) -> bool
+                {
+                    return handle_event(event);
+                }
+
+                template<std::default_initializable event>
+                [[nodiscard]] constexpr auto handle_event() -> bool
+                {
+                    return handle_event(event {});
+                }
+        };
     }// namespace pvt
 
     /**
@@ -321,7 +360,10 @@ namespace ctfsm
                         }
                         else
                         {
-                            return lambda(*current, injected_parent);
+                            auto checked
+                                = pvt::checked_fsm<current_state, std::decay_t<decltype(injected_parent)>> {
+                                    injected_parent};
+                            return lambda(*current, checked);
                         }
                     },
                     _current_state);
