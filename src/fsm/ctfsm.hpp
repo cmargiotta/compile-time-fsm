@@ -33,12 +33,12 @@ namespace ctfsm
             typename T::parent_state;
 
             {
-                fsm.invoke_on_current([](auto s, auto & fsm) { return true; })
+                fsm.invoke_on_current([](const auto & s, auto & fsm) { return true; })
             } -> std::same_as<bool>;
         };
 
         template<class current_state, class fsm>
-        class checked_fsm : public fsm
+        class checked_fsm
         {
                 // Current state is available at compile time, this can be used to validate
                 // transitions
@@ -49,7 +49,6 @@ namespace ctfsm
             public:
                 constexpr checked_fsm(fsm& instance): instance {instance}
                 {
-                    static_assert(valid_fsm<checked_fsm>);
                 }
 
                 constexpr auto handle_event(auto& event) -> bool

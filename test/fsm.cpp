@@ -42,6 +42,10 @@ struct state_on
         static constinit inline bool      on_entered   = false;
         static constinit inline bool      forced       = false;
 
+        constexpr state_on() = default;
+        // States can be non-copyable
+        state_on(const state_on&) = delete;
+
         void on_enter(switch_on&)
         {
             on_entered = true;
