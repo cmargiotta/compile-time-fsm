@@ -1,5 +1,6 @@
 #include <type_traits>
 
+#include <ctfsm.hpp>
 #include <utility/existence_verifier.hpp>
 #include <utility/type_map.hpp>
 #include <utility/type_set.hpp>
@@ -32,7 +33,7 @@ static_assert(has_c_method<A, int, int &, const float &>);
 static_assert(!has_c_method<A, float, int &, float>);
 static_assert(!has_c_method<A, int, A>);
 
-using map = type_map<std::pair<int, float>, std::pair<double, char>>;
+using map = type_map<ctfsm::transition<int, float>, ctfsm::transition<double, char>>;
 
 static_assert(std::is_same_v<extract_values<map>::values, std::tuple<float, char>>);
 static_assert(std::is_same_v<extract_keys<map>::keys, std::tuple<int, double>>);

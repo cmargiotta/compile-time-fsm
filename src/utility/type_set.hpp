@@ -1,12 +1,12 @@
+#ifndef CTFSM_UTILITY_TYPE_SET_HPP_
+#define CTFSM_UTILITY_TYPE_SET_HPP_
+
 /**
  * @file type_set.hpp
- * @author Carmine Margiotta (cmargiotta@posteo.net)
+ * @author Carmine Margiotta (email@cmargiotta.net)
  *
- * @copyright Copyright (c) 2022
+ * @copyright Copyright (c) 2025
  */
-
-#ifndef UTILITY_TYPE_SET_HPP
-#define UTILITY_TYPE_SET_HPP
 
 #include <cstdint>
 #include <tuple>
@@ -144,4 +144,5 @@ namespace ctfsm
     using type_set_find_element = type_set_find_element_helper<element, set, 0>;
 }// namespace ctfsm
 
-#endif// UTILITY_TYPE_SET_HPP
+
+#endif /* CTFSM_UTILITY_TYPE_SET_HPP_*/
