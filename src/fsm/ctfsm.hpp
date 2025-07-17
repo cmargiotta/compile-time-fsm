@@ -37,6 +37,24 @@ namespace ctfsm
             } -> std::same_as<bool>;
         };
 
+        struct final_state
+        {
+                using transitions = ctfsm::type_map<>;
+        };
+
+        template<typename T>
+        struct final_state_checker : public std::false_type
+        {
+        };
+
+        template<>
+        struct final_state_checker<final_state> : public std::true_type
+        {
+        };
+
+        template<typename T>
+        concept final = final_state_checker<T>::value;
+
         template<class current_state, class fsm>
         class checked_fsm
         {
@@ -82,10 +100,10 @@ namespace ctfsm
      *
      * @tparam state
      */
-    template<class initial_state, class _exit_events = std::tuple<>, class _parent_state = void>
+    template<class initial_state, class _parent_state = void>
     class fsm
     {
-            template<class I, class E, class P>
+            template<class I, class P>
             friend class fsm;
 
         private:
@@ -108,20 +126,20 @@ namespace ctfsm
                     using result = child;
             };
 
-            template<class parent, class i, class e, class p>
-            struct parent_injector_single<parent, fsm<i, e, p>>
+            template<class parent, class i, class p>
+            struct parent_injector_single<parent, fsm<i, p>>
             {
                     // Current is a nested FSM, injecting parent
-                    using result = fsm<i, e, parent>;
+                    using result = fsm<i, parent>;
             };
 
             // Inject the _parent_state parameter to nested fsms
             template<class parent, class children_tuple, class result = std::tuple<>>
             struct parent_injector;
 
-            template<class parent, class i, class e, class p, class... children, class... result>
-            struct parent_injector<parent, std::tuple<fsm<i, e, p>, children...>, std::tuple<result...>>
-                : parent_injector<parent, std::tuple<children...>, std::tuple<fsm<i, e, parent>, result...>>
+            template<class parent, class i, class p, class... children, class... result>
+            struct parent_injector<parent, std::tuple<fsm<i, p>, children...>, std::tuple<result...>>
+                : parent_injector<parent, std::tuple<children...>, std::tuple<fsm<i, parent>, result...>>
             {
                     // Current is a nested FSM, injecting parent
             };
@@ -251,8 +269,84 @@ namespace ctfsm
                     static constexpr auto id = state::id;
             };
 
+            template<class states, class result = std::tuple<>>
+            struct remove_final_states;
+
+            template<class state, class... states, class... result>
+                requires(!pvt::final<state>)
+            struct remove_final_states<std::tuple<state, states...>, std::tuple<result...>>
+                : public remove_final_states<std::tuple<states...>, std::tuple<state, result...>>
+            {
+            };
+
+            template<pvt::final state, class... states, class... result>
+            struct remove_final_states<std::tuple<state, states...>, std::tuple<result...>>
+                : public remove_final_states<std::tuple<states...>, std::tuple<result...>>
+            {
+            };
+
+            template<class _result>
+            struct remove_final_states<std::tuple<>, _result>
+            {
+                    using states = _result;
+            };
+
+            template<class transitions, class result = std::tuple<>>
+            struct exit_events_extractor_from_transitions;
+
+            template<class transition, class... transitions, class... results>
+                requires(pvt::final<typename transition::value>)
+            struct exit_events_extractor_from_transitions<ctfsm::type_map<transition, transitions...>,
+                                                          std::tuple<results...>>
+            {
+                    // Final target state detected, save the event in results
+                    using result = typename exit_events_extractor_from_transitions<
+                        ctfsm::type_map<transitions...>,
+                        std::tuple<typename transition::key, results...>>::result;
+            };
+
+            template<class transition, class... transitions, class... results>
+                requires(!pvt::final<typename transition::value>)
+            struct exit_events_extractor_from_transitions<ctfsm::type_map<transition, transitions...>,
+                                                          std::tuple<results...>>
+            {
+                    using result =
+                        typename exit_events_extractor_from_transitions<ctfsm::type_map<transitions...>,
+                                                                        std::tuple<results...>>::result;
+            };
+
+            template<class _result>
+            struct exit_events_extractor_from_transitions<ctfsm::type_map<>, _result>
+            {
+                    using result = _result;
+            };
+
+            template<class states>
+            struct exit_events_extractor;
+
+            template<class t>
+                requires(std::same_as<t, std::tuple<>>)
+            struct exit_events_extractor<t>
+            {
+                    using result = std::tuple<>;
+            };
+
+            template<class state, class... states>
+            struct exit_events_extractor<std::tuple<state, states...>>
+            {
+                    using exit_events =
+                        typename exit_events_extractor_from_transitions<typename state::transitions>::result;
+
+                    using result =
+                        typename type_set_merge<exit_events,
+                                                typename exit_events_extractor<std::tuple<states...>>::result>::set;
+            };
+
+
+
         public:
-            using states = nested_filter<typename state_expander<std::tuple<initial_state>>::states>;
+            using states  = nested_filter<typename remove_final_states<
+                 typename state_expander<std::tuple<initial_state>>::states>::states>;
             using id_type = typename id_types_verifier<typename states::states>::type;
 
             typename states::states                                           _states;
@@ -260,7 +354,7 @@ namespace ctfsm
             variant_builder_t<typename states::states, typename states::fsms> _current_state;
             const id_type*                                                    _current_state_id;
 
-            using exit_events  = _exit_events;
+            using exit_events  = typename exit_events_extractor<decltype(_states)>::result;
             using parent_state = _parent_state;
 
         private:
@@ -378,6 +472,13 @@ namespace ctfsm
                   _current_state_id(&id_extractor<initial_state>::id)
             {
                 static_assert(pvt::valid_fsm<fsm>);
+
+                if constexpr (std::same_as<_parent_state, void>)
+                {
+                    // This is not a nested FSM
+                    static_assert(std::same_as<exit_events, std::tuple<>>,
+                                  "Exit events are admitted only in a nested FSM");
+                }
             }
 
             /**
@@ -522,6 +623,13 @@ namespace ctfsm
     {
             using key   = Event;
             using value = fsm<Nested_Fsm_Initial_State, std::tuple<Exit_Events...>>;
+    };
+
+    template<typename Event>
+    struct exit_transition
+    {
+            using key   = Event;
+            using value = pvt::final_state;
     };
 
     template<mappable... data>
