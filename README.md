@@ -27,7 +27,10 @@ $ make single_include
 ### Declaration
 
 Every state and every handled event is simply a type, with only two mandatory requirements:
-- a state **must** provide a public alias, `transitions`, that is a `ctfsm::type_map` of `event`s and their relative target states, basically the edges list of a graph, events must be unique;
+- a state **must** provide a public alias, `transitions`, that is a `ctfsm::type_map` of `event`s and their relative target states, basically the edges list of a graph, events must be unique; a transition **can** be:
+  - a `ctfsm::transition<E, T>`, where `E` is an event and `T` is the target state, `T` will be considered reachable from this state;
+  - a `ctfsm::nested<E, I>`, where `E` is an event and `I` is the initial state of a nested FSM;
+  - a `ctfsm::exit_transition<E>`, where `E` is an exit event for this FSM, this kind of transition is allowed **only** inside a nested state machine (this is enforced by a static assertion);
 - a state **must** be defaultly constructible.
 
 And can, **optionally**:
@@ -105,16 +108,23 @@ is enough, all reachable states will be deduced from the provided initial state 
 
 A `transition_map` can contain a mixed list of `ctfm::transition`, as shown in the previous section, and `ctfsm::nested`.
 
-A nested FSM can be specified as:
+A nested FSM can be specified using:
 
 ``` cpp
-ctfsm::nested<Event, Init, Exit...>
+ctfsm::nested<Event, Init>
 ```
 
 Where:
-- `Event` is the event that triggers the transition;
+- `Event` is the specific event that triggers the parent FSM to transition into this nested FSM;
 - `Init` is the initial state of the nested FSM;
-- `Exit...` is a list of exit events: when an event contained in `Exit...` is accepted by the nested FSM, the parent state becomes the current state; if that event is accepted by the parent state too, it is automatically forwarded to it via an `handle_event`.
+
+The list of exit events will be extracted from the nested FSM: when an exit events is accepted by the nested FSM, the parent state becomes the current state; if that event is accepted by the parent state too, it is automatically forwarded to it via an `handle_event`.
+
+When an event causes the nested FSM to reach one of its designated exit states, the following sequence of actions occurs automatically:
+- `handle_event` for the event is invoked on the **nested FSM**;
+- `reset` is invoked on the nested FSM, preparing it for future use;
+- The parent FSM's current state reverts to the state that owns the nested FSM;
+- `handle_event` with the event is invoked on the current state, this allows the parent FSM to react to the nested FSM's completion.
 
 ### Lifetimes
 
@@ -185,16 +195,14 @@ If an invalid transition is detected, a static assertion with message `"Transiti
 ### FSM
 | Function      | Description   |
 |---            |---            |
-| `constexpr bool handle_event(event)` | *This function is enabled only if exceptions are disabled with `-fno-exceptions` flag* <br> The event is delivered to states and the current state is updated if a valid transaction for this event is found. If this event cannot be handled by the current state, the function returns `false`.|
-| `constexpr void handle_event(event)` | *This function is enabled only if exceptions are enabled* <br> The event is delivered to states and the current state is updated if a valid transaction for this event is found. If this event cannot be handled by the current state, an `std::runtime_error` is thrown.|
-| `constexpr bool handle_event<event_t>()` | *This function is enabled only if exceptions are disabled with `-fno-exceptions` flag* <br> The event of type `event_t` is default-constructed and delivered to states and the current state is updated if a valid transaction for this event is found. If this event cannot be handled by the current state, the function returns `false`.|
-| `constexpr void handle_event<event_t>()` | *This function is enabled only if exceptions are enabled* <br> The event of type `event_t` is default-constructed and delivered to states and the current state is updated if a valid transaction for this event is found. If this event cannot be handled by the current state, an `std::runtime_error` is thrown.|
+| `constexpr bool handle_event(event)` | The event is delivered to states and the current state is updated if a valid transaction for this event is found. If this event cannot be handled by the current state, the function returns `false`.|
+| `constexpr bool handle_event<event_t>()` | The event of type `event_t` is default-constructed and delivered to states and the current state is updated if a valid transaction for this event is found. If this event cannot be handled by the current state, the function returns `false`.|
 | `constexpr const id_type& get_current_state_id() const noexcept` | The ID of the current state is returned: if every state has a member named `id` of the same type, the `id` of the current state is returned, otherwise `typeid(current_state_t).name()` is returned. |
 | `constexpr bool is_current_state<T>() const noexcept` | Returns `true` if `T` is the type of the current state. |
 | `constexpr auto invoke_on_current(auto lambda) noexcept` | Lambda must be invocable with a reference to the current state instance and the fsm itself. The value returned by lambda is forwarded to the caller. |
 
 ### State
-- A state class must provide a `transitions` alias, a `ctfs::type_map` composed by `ctfsm::transition`s or `ctfsm::nested`s. If no `transitions` alias is provided, the state will be a sink state.
+- A state class must provide a `transitions` alias, a `ctfs::type_map` composed by `ctfsm::transition`s, `ctfsm::exit_transition`s or `ctfsm::nested`s. If no `transitions` alias is provided, the state will be a sink state.
 - Each state can provide a publicly accessible `id` field. The library will use this field only if every state of the FSM provides an `id` field of the same type.
 - A state can handle `exit` events, which are triggered when the FSM changes state while it is the current state. An unlimited number of `void on_exit(E& event)` overloads and a `void on_exit()` method can be provided. The no-argument handler will be invoked only for events that do not have a specific overload. A state without `exit` handlers is also completely valid.
 - A state can handle `enter` events, which are triggered when the FSM changes state while it is the target state. An unlimited number of `void on_enter(E& event)` overloads and a `void on_enter()` method can be provided. The no-argument handler will be invoked only for events that do not have a specific overload. A state without `enter` handlers is also completely valid.
