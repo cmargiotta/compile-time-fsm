@@ -11,6 +11,7 @@ MAKE_EXISTENCE_VERIFIER(c);
 MAKE_EXISTENCE_VERIFIER(d);
 
 using namespace ctfsm;
+using namespace ctfsm::pvt;
 
 struct A
 {

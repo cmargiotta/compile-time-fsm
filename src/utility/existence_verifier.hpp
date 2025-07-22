@@ -14,7 +14,7 @@
  * @brief Build a concept that verifies the existence of the given member.
  */
 #define MAKE_EXISTENCE_VERIFIER(member)                                                            \
-    namespace ctfsm                                                                                \
+    namespace ctfsm::pvt                                                                           \
     {                                                                                              \
         template<typename T>                                                                       \
         concept has_##member = requires(T instance) { std::declval<T>().member; };                 \
@@ -26,6 +26,5 @@
                                             { instance.member() } -> std::same_as<Ret>;            \
                                         });                                                        \
     }
-
 
 #endif /* CTFSM_UTILITY_EXISTENCE_VERIFIER_HPP_*/

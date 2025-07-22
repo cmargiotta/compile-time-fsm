@@ -14,7 +14,7 @@
 
 #include "type_set.hpp"
 
-namespace ctfsm
+namespace ctfsm::pvt
 {
     /**
      * @brief A type indexable by a type_map
@@ -139,6 +139,6 @@ namespace ctfsm
 
             static constexpr bool valid = true;
     };
-}// namespace ctfsm
+}// namespace ctfsm::pvt
 
 #endif /* CTFSM_UTILITY_TYPE_MAP_HPP_*/

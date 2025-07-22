@@ -12,7 +12,7 @@
 #include <tuple>
 #include <type_traits>
 
-namespace ctfsm
+namespace ctfsm::pvt
 {
     /**
      * @brief Checks if the Element type is in the given std::tuple
@@ -142,7 +142,6 @@ namespace ctfsm
      */
     template<class element, class set>
     using type_set_find_element = type_set_find_element_helper<element, set, 0>;
-}// namespace ctfsm
-
+}// namespace ctfsm::pvt
 
 #endif /* CTFSM_UTILITY_TYPE_SET_HPP_*/
