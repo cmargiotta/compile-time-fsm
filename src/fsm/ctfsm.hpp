@@ -131,7 +131,12 @@ namespace ctfsm
                     }
                     else
                     {
-                        _current_state = &std::get<target_state>(_nested_fsms);
+                        auto* current  = &std::get<target_state>(_nested_fsms);
+                        _current_state = current;
+
+                        std::visit([current, &event](auto* state)
+                                   { current->invoke_on_enter(*state, event); },
+                                   current->_current_state);
                     }
                 }
 

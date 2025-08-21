@@ -255,6 +255,7 @@ TEST_CASE("FSM with nested FSM handling with internal methods", "[fsm]")
     // We are in a nested FSM (switch_on), but from outside we are still in IDLE
     REQUIRE(fsm.get_current_state_id() == "IDLE");
     REQUIRE(fsm.invoke_on_current([](auto& state, auto& /*fsm*/) { return state.id; }) == "ON");
+    REQUIRE(nested_test::state_on::on_entered);
 
     // State on -> state off
     REQUIRE(fsm.invoke_on_current([](auto& state, auto& fsm) { return state.work(fsm); }));
