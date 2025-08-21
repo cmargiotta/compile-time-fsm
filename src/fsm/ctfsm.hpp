@@ -37,13 +37,15 @@ namespace ctfsm
      *
      * @tparam state
      */
-    template<class initial_state, class _parent_state = void>
+    template<class _initial_state, class _parent_state = void>
     class fsm
     {
             template<class I, class P>
             friend class fsm;
 
         public:
+            using initial_state = _initial_state;
+
             using states  = pvt::nested_filter<typename pvt::remove_final_states<
                  typename pvt::state_expander<std::tuple<initial_state>>::states>::states>;
             using id_type = typename pvt::id_types_verifier<typename states::states>::type;
@@ -131,12 +133,13 @@ namespace ctfsm
                     }
                     else
                     {
-                        auto* current  = &std::get<target_state>(_nested_fsms);
-                        _current_state = current;
+                        auto* current = &std::get<target_state>(_nested_fsms);
+                        auto& nested_state
+                            = std::get<typename target_state::initial_state>(current->_states);
 
-                        std::visit([current, &event](auto* state)
-                                   { current->invoke_on_enter(*state, event); },
-                                   current->_current_state);
+                        current->invoke_on_enter(nested_state, event);
+
+                        _current_state = current;
                     }
                 }
 
