@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include <variant>
 
 #include "traits/checked_fsm.hpp"
@@ -20,6 +21,7 @@
 #include "traits/nested_filter.hpp"
 #include "traits/remove_final_states.hpp"
 #include "traits/state_expander.hpp"
+#include "traits/validators_extractor.hpp"
 #include "traits/variant_builder.hpp"
 #include "utility/existence_verifier.hpp"
 #include "utility/type_map.hpp"
@@ -57,11 +59,22 @@ namespace ctfsm
 
             using exit_events  = typename pvt::exit_events_extractor<decltype(_states)>::result;
             using parent_state = _parent_state;
+            using validators   = typename pvt::validators_extractor<decltype(_states)>::result;
 
         private:
             template<class current_state, class _event>
-            constexpr void invoke_on_exit(current_state& current, _event& event) noexcept
+            constexpr auto invoke_on_exit(current_state& current, _event& event) noexcept -> bool
             {
+                if constexpr (pvt::has_on_exit_method<current_state, bool, std::decay_t<_event>>)
+                {
+                    return current.on_exit(event);
+                }
+
+                if constexpr (pvt::has_on_exit_method<current_state, bool>)
+                {
+                    return current.on_exit();
+                }
+
                 if constexpr (pvt::has_on_exit_method<current_state, void, std::decay_t<_event>>)
                 {
                     current.on_exit(event);
@@ -70,11 +83,23 @@ namespace ctfsm
                 {
                     current.on_exit();
                 }
+
+                return true;
             }
 
             template<class current_state, class _event>
-            constexpr void invoke_on_enter(current_state& current, _event& event) noexcept
+            constexpr auto invoke_on_enter(current_state& current, _event& event) noexcept -> bool
             {
+                if constexpr (pvt::has_on_enter_method<current_state, bool, std::decay_t<_event>>)
+                {
+                    return current.on_enter(event);
+                }
+
+                if constexpr (pvt::has_on_enter_method<current_state, bool>)
+                {
+                    return current.on_enter();
+                }
+
                 if constexpr (pvt::has_on_enter_method<current_state, void, std::decay_t<_event>>)
                 {
                     current.on_enter(event);
@@ -83,42 +108,71 @@ namespace ctfsm
                 {
                     current.on_enter();
                 }
+
+                return true;
             }
 
             template<class _event>
-            constexpr void invoke_on_transit(_event& event) noexcept
+            constexpr auto invoke_on_transit(_event& event) noexcept -> bool
             {
-                if constexpr (!pvt::has_on_transit_method<_event, void>)
+                if constexpr (pvt::has_on_transit_method<_event, bool>)
                 {
-                    return;
+                    return event.on_transit();
                 }
-                else
+
+                if constexpr (pvt::has_on_transit_method<_event, void>)
                 {
                     event.on_transit();
                 }
+
+                return true;
             }
 
-            template<class current_state, class target_state>
+            template<class current_state, class target_state, bool ignore_undefined_transitions>
             constexpr auto handle_event_(auto&) -> bool
                 requires(std::is_same_v<target_state, void>)
             {
-                return false;
+                return ignore_undefined_transitions;
             }
 
-            template<class current_state, class target_state>
+            template<class current_state, class target_state, bool ignore_undefined_transitions>
             constexpr auto handle_event_(auto& event) noexcept -> bool
             {
                 using event_t = std::decay_t<decltype(event)>;
 
-                // On exit will always be invoked
-                invoke_on_exit(std::get<current_state>(_states), event);
+                using validator_t
+                    = decltype(pvt::find_by_key<std::pair<current_state, event_t>,
+                                                validators>::result::transition_validator);
 
-                if constexpr (pvt::contains<event_t, exit_events>::value)
+                if constexpr (std::invocable<validator_t, event_t>)
                 {
-                    // This is an exit event, reset the fsm and return
-                    reset();
+                    if (!pvt::find_by_key<std::pair<current_state, event_t>, validators>::result::transition_validator(
+                            event))
+                    {
+                        // Transition not valid
+                        return false;
+                    }
                 }
                 else
+                {
+                    static_assert(std::invocable<validator_t, event_t, const current_state>,
+                                  "Validator's signature is invalid");
+
+                    if (!pvt::find_by_key<std::pair<current_state, event_t>, validators>::result::transition_validator(
+                            event, std::get<current_state>(_states)))
+                    {
+                        // Transition not valid
+                        return false;
+                    }
+                }
+
+                // On exit will always be invoked
+                if (!invoke_on_exit(std::get<current_state>(_states), event))
+                {
+                    return false;
+                }
+
+                if constexpr (!pvt::contains<event_t, exit_events>::value)
                 {
                     invoke_on_transit(event);
 
@@ -179,6 +233,7 @@ namespace ctfsm
                   _current_state_id(&pvt::id_extractor<initial_state>::id)
             {
                 static_assert(pvt::valid_fsm<fsm>);
+                static_assert(validators::valid);
 
                 if constexpr (std::same_as<_parent_state, void>)
                 {
@@ -202,6 +257,7 @@ namespace ctfsm
              *
              * @param event
              */
+            template<bool ignore_undefined_transitions = false>
             [[nodiscard]] constexpr auto handle_event(auto& event) -> bool
             {
                 using event_t = std::decay_t<decltype(event)>;
@@ -223,7 +279,8 @@ namespace ctfsm
                             static_assert(current_state::transitions::valid,
                                           "Transitions events must be unique");
 
-                            return this->handle_event_<current_state, target_state>(event);
+                            return this->handle_event_<current_state, target_state, ignore_undefined_transitions>(
+                                event);
                         }
                         else
                         {
@@ -242,12 +299,16 @@ namespace ctfsm
                                     = &std::get<typename current_state::parent_state>(_states);
 
                                 // Try to pass event to current state
-                                if (handle_event(event))
+                                if (!handle_event<true>(event))
                                 {
-                                    // Event has been accepted!
-                                    return true;
+                                    // Event has been refused, current_state remains the nested
+                                    // FSM
+                                    _current_state = current;
+                                    return false;
                                 }
 
+                                // Resetting nested fsm
+                                current->reset();
                                 // Parent state does not care about this event
                                 return true;
                             }
@@ -318,11 +379,18 @@ namespace ctfsm
             }
     };
 
-    template<typename Event, typename Target>
+    template<typename Event,
+             typename Target,
+             auto validator =
+                 [](const Event&)
+             {
+                 return true;
+             }>
     struct transition
     {
-            using key   = Event;
-            using value = Target;
+            using key                                  = Event;
+            using value                                = Target;
+            static constexpr auto transition_validator = validator;
     };
 
     template<typename Event, typename Nested_Fsm_Initial_State, typename... Exit_Events>
@@ -330,13 +398,23 @@ namespace ctfsm
     {
             using key   = Event;
             using value = fsm<Nested_Fsm_Initial_State, std::tuple<Exit_Events...>>;
+            static constexpr auto transition_validator = [](const Event&)
+            {
+                return true;
+            };
     };
 
-    template<typename Event>
+    template<typename Event,
+             auto validator =
+                 [](const Event&)
+             {
+                 return true;
+             }>
     struct exit_transition
     {
-            using key   = Event;
-            using value = pvt::final_state;
+            using key                                  = Event;
+            using value                                = pvt::final_state;
+            static constexpr auto transition_validator = validator;
     };
 
     template<pvt::mappable... data>

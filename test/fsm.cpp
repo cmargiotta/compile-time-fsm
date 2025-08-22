@@ -69,7 +69,14 @@ struct on
 
 struct off
 {
-        using transitions = ctfsm::transition_map<ctfsm::transition<switch_on, on>>;
+        using transitions
+            = ctfsm::transition_map<ctfsm::transition<switch_on, on>,
+                                    ctfsm::transition<explode,
+                                                      off,
+                                                      [](const auto& event, const auto& state)
+                                                      {
+                                                          return false;
+                                                      }>>;
 
         static constexpr std::string_view id {"OFF"};
         static constinit inline bool      entered = false;
@@ -116,6 +123,7 @@ TEST_CASE("FSM basic usage", "[fsm]")
     REQUIRE(on::switched_off);
 
     REQUIRE_FALSE(fsm.handle_event(off));
+    REQUIRE_FALSE(fsm.handle_event<::explode>());
 
     REQUIRE(fsm.handle_event<switch_on>());
 
@@ -193,6 +201,14 @@ namespace nested_test
                 forced = true;
             }
 
+            auto on_exit(explode) -> bool
+            {
+                static bool accept = true;
+
+                accept = !accept;
+                return accept;
+            }
+
             void on_enter()
             {
                 entered = true;
@@ -263,6 +279,11 @@ TEST_CASE("FSM with nested FSM handling with internal methods", "[fsm]")
     REQUIRE(fsm.get_current_state_id() == "IDLE");
 
     // Send explode
+    // First time refused
+    REQUIRE_FALSE(fsm.handle_event<explode>());
+    REQUIRE(fsm.invoke_on_current([](auto& state, auto& /*fsm*/) { return state.id; }) == "OFF");
+    REQUIRE(fsm.get_current_state_id() == "IDLE");
+
     REQUIRE(fsm.handle_event<explode>());
     REQUIRE(fsm.invoke_on_current([](auto& state, auto& /*fsm*/) { return state.id; }) == "IDLE");
     REQUIRE(fsm.get_current_state_id() == "IDLE");

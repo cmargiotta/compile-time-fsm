@@ -58,6 +58,33 @@ namespace ctfsm::pvt
     template<class key, class map>
     struct find_by_key;
 
+    /**
+     * @brief Merge type maps
+     *
+     * @tparam data
+     */
+    template<typename... maps>
+    struct merge_type_maps;
+
+    template<typename... Elements1, typename... Elements2, typename... Tail>
+    struct merge_type_maps<type_map<Elements1...>, type_map<Elements2...>, Tail...>
+    {
+            using result =
+                typename merge_type_maps<type_map<Elements1..., Elements2...>, Tail...>::result;
+    };
+
+    template<typename... Elements>
+    struct merge_type_maps<type_map<Elements...>>
+    {
+            using result = type_map<Elements...>;
+    };
+
+    template<>
+    struct merge_type_maps<>
+    {
+            using result = type_map<>;
+    };
+
     template<class key, mappable current, class... data>
     struct find_by_key<key, type_map<current, data...>> : find_by_key<key, type_map<data...>>
     {
